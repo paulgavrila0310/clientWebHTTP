@@ -29,13 +29,14 @@ char *compute_get_request(char *host, char *url, char *query_params,
     compute_message(message, line);
     // Step 3 (optional): add headers and/or cookies, according to the protocol format
     if (cookies != NULL) {
-       sprintf(line, "Cookie: %s", cookies[0]);
+        sprintf(line, "Cookie: %s", cookies[0]);
         char *temp = calloc(LINELEN, sizeof(char));
         for (int i = 1; i < cookies_count; i++) {
             sprintf(temp, "; %s", cookies[i]);
             strcat(line, temp);
         }
         free(temp);
+        compute_message(message, line);
     }
 
     if (jwt_token != NULL) {

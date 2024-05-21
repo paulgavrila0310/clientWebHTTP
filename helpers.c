@@ -131,20 +131,36 @@ char *basic_extract_json_response(char *str)
 }
 
 char *get_cookie(char* response) {
-    char* cookie = strstr(response, "Set-Cookie: ");
-    if (cookie != NULL) {
-        strtok(cookie, " ;");
-        return strtok(NULL, " ;");
+    // checking if server response contains a cookie
+    char* cookie_start = strstr(response, "Set-Cookie: ");
+    if (cookie_start != NULL) {
+        // if it does, we extract it
+        cookie_start += strlen("Set-Cookie: ");
+        char* cookie_end = strchr(cookie_start, ';');
+        int cookie_len = cookie_end - cookie_start;
+        char* cookie;
+        cookie = malloc(cookie_len + 1);
+        strncpy(cookie, cookie_start, cookie_len);
+        cookie[cookie_len] = '\0';
+        return cookie;
     }
+
     return NULL;
 }
 
 char *get_jwt_token(char* response) {
-    char* token = strstr(response, "token");
-    if (token != NULL) {
-        strtok(token, ":\"");
-        return strtok(NULL, ":\"");
+    char* token_start = strstr(response, "token\":\"");
+    if (token_start != NULL) {
+        token_start += strlen("token\":\"");
+        char* token_end = strchr(token_start, '"');
+        int token_len = token_end - token_start;
+        char* token;
+        token = malloc(token_len + 1);
+        strncpy(token, token_start, token_len);
+        token[token_len] = '\0';
+        return token;
     }
+
     return NULL;
 }
 
