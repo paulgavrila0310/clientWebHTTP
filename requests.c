@@ -51,7 +51,8 @@ char *compute_get_request(char *host, char *url, char *query_params,
 }
 
 char *compute_post_request(char *host, char *url, char* content_type, char **body_data,
-                            int body_data_fields_count, char **cookies, int cookies_count)
+                            int body_data_fields_count, char **cookies, int cookies_count,
+                            char* jwt_token)
 {
     char *message = calloc(BUFLEN, sizeof(char));
     char *line = calloc(LINELEN, sizeof(char));
@@ -70,6 +71,7 @@ char *compute_post_request(char *host, char *url, char* content_type, char **bod
     int len = 0;
     for(int i = 0; i < body_data_fields_count; i++) {
         strcat(body_data_buffer, body_data[i]);
+        //strcat(body_data_buffer, "\0");
         len += strlen(body_data[i]);
     }
     sprintf(line, "Content-Type: %s", content_type);
@@ -87,11 +89,19 @@ char *compute_post_request(char *host, char *url, char* content_type, char **bod
         free(temp);
         compute_message(message, line);
     }
+
+    if (jwt_token != NULL) {
+        memset(line, 0, sizeof(char) * LINELEN);
+        sprintf(line, "Authorization: Bearer %s", jwt_token);
+        compute_message(message, line);
+    }
     // Step 5: add new line at end of header
     compute_message(message, "");
     // Step 6: add the actual payload data
     memset(line, 0, LINELEN);
     strcat(message, body_data_buffer);
+
+
 
     free(line);
     return message;

@@ -1,10 +1,10 @@
-#include <stdio.h>      /* printf, sprintf */
-#include <stdlib.h>     /* exit, atoi, malloc, free */
-#include <unistd.h>     /* read, write, close */
-#include <string.h>     /* memcpy, memset */
-#include <sys/socket.h> /* socket, connect */
-#include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
-#include <netdb.h>      /* struct hostent, gethostbyname */
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
 #include <arpa/inet.h>
 #include "helpers.h"
 #include "requests.h"
@@ -27,21 +27,24 @@ int register_user() {
     // username
     printf("username=");
     getline(&username, &username_size, stdin);
-    if (strchr(username, ' ')) {
-        printf("ERROR - Invalid username!\n");
-        return -1;
-    }
     username[strlen(username) - 1] = '\0';
 
     // password
     printf("password=");
     getline(&password, &password_size, stdin);
+    password[strlen(password) - 1] = '\0';
+
+    // checking input validity
+    if (strchr(username, ' ')) {
+        printf("ERROR - Invalid username!\n");
+        return -1;
+    }
+
     if (strchr(password, ' ')) {
         printf("ERROR - Invalid password!\n");
         return -1;
     }
-    password[strlen(password) - 1] = '\0';
-
+    
     // constructing the JSON packet
     JSON_Value* root_value = json_value_init_object();
     JSON_Object* root_object = json_value_get_object(root_value);
@@ -57,13 +60,13 @@ int register_user() {
     char content_type[] = "application/json";
 
     // creating message
-    message = compute_post_request(serv_addr, url, content_type, &json, 2, NULL, 0);
+    message = compute_post_request(serv_addr, url, content_type, &json, 1, NULL, 0, NULL);
 
     // sending message to server and receiving response
     send_to_server(sockfd, message);
     response = receive_from_server(sockfd);
 
-    if (strstr(response, "OK")) {
+    if (strstr(response, "Created")) {
         printf("SUCCESS - New user registered!\n");
     } else {
         printf("ERROR - User already has an account!\n");
@@ -85,20 +88,23 @@ int login_user() {
     // username
     printf("username=");
     getline(&username, &username_size, stdin);
-    if (strchr(username, ' ')) {
-        printf("\nERROR - Invalid username!");
-        return -1;
-    }
     username[strlen(username) - 1] = '\0';
 
     // password
     printf("password=");
     getline(&password, &password_size, stdin);
-    if (strchr(password, ' ')) {
-        printf("\nERROR - Invalid password!");
+    password[strlen(password) - 1] = '\0';
+
+    // checking input validity
+    if (strchr(username, ' ')) {
+        printf("ERROR - Invalid username!\n");
         return -1;
     }
-    password[strlen(password) - 1] = '\0';
+
+    if (strchr(password, ' ')) {
+        printf("ERROR - Invalid password!\n");
+        return -1;
+    }
 
     // constructing the JSON packet
     JSON_Value* root_value = json_value_init_object();
@@ -106,7 +112,6 @@ int login_user() {
     json_object_set_string(root_object, "username", username);
     json_object_set_string(root_object, "password", password);
     char* json = json_serialize_to_string_pretty(root_value);
-    //printf("%s\n", json);
 
     // connecting to server
     sockfd = open_connection(serv_addr, port, AF_INET, SOCK_STREAM, 0);
@@ -118,12 +123,11 @@ int login_user() {
     // creating message
     char** cookies = (char**)malloc(sizeof(char*));
     cookies[0] = session_cookie;
-    message = compute_post_request(serv_addr, url, content_type, &json, 2, cookies, 1);
+    message = compute_post_request(serv_addr, url, content_type, &json, 1, cookies, 1, NULL);
 
     // sending message to server and receiving response
     send_to_server(sockfd, message);
     response = receive_from_server(sockfd);
-    //printf("Message from server: %s\n", response);
 
     // printing response
     if (strstr(response, "400 Bad Request")) {
@@ -131,12 +135,11 @@ int login_user() {
     }
 
     if (strstr(response, "200 OK")) {
-        printf("SUCCESS - User logged in!");
+        printf("SUCCESS - User logged in!\n");
     }
 
     // setting session cookie
     session_cookie = get_cookie(response);
-    //printf("Cookie-ul este: %s\n", session_cookie);
 
     // closing connection
     close_connection(sockfd);
@@ -170,7 +173,6 @@ int enter_library() {
     response = receive_from_server(sockfd);
 
     // printing response
-    printf("Message from server: %s\n", response);
     if (strstr(response, "401 Unauthorized")) {
         printf("ERROR - User is not logged in!\n");
     } else {
@@ -215,20 +217,13 @@ int get_books() {
     // sending message to server and receiving response
     send_to_server(sockfd, message);
     response = receive_from_server(sockfd);
+    response = strchr(response, '[');
     
-    if (strstr(response, "OK")) {
+    if (response != NULL) {
         // printing the list of JSON packets
-        JSON_Value *root_value = json_parse_string(response);
-        JSON_Object *root_object = json_value_get_object(root_value);
-        JSON_Array *books_array = json_object_get_array(root_object, "books");
-        char *serialized_string = json_serialize_to_string_pretty(json_array_get_wrapping_value(books_array));
-        //printf("%s\n", serialized_string);
-        json_free_serialized_string(serialized_string);
-        json_value_free(root_value);
-       // printf("%s\n", response);
+        printf("%s\n", response);
     } else {
         printf("ERROR - Could not print information about books!\n");
-        //printf("%s\n", response);
     }
 
     // closing connection
@@ -262,37 +257,39 @@ int get_book() {
         printf("\nERROR - Invalid book ID! (has to be number)");
         return -1;
     }
+    int id = atoi(book_id);
 
     // opening connection
     sockfd = open_connection(serv_addr, port, AF_INET, SOCK_STREAM, 0);
 
     // GET request data
-    char base_url[] = "/api/v1/tema/library/books/:";
+    char base_url[] = "/api/v1/tema/library/books/";
     int url_len = strlen(base_url) + strlen(book_id) + 1;
     char url[url_len];
     memset(url, 0, url_len);
-    sprintf(url, "%s%s", base_url, book_id);
+    sprintf(url, "%s%d", base_url, id);
     url[url_len - 1] = '\0';
 
     // creating message
-    char** cookies = (char**)malloc(sizeof(char*));
-    cookies[0] = session_cookie;
-    message = compute_get_request(serv_addr, url, NULL, cookies, 1, jwt_token);
+    message = compute_get_request(serv_addr, url, NULL, NULL, 0, jwt_token);
 
     // sending message to server and receiving response
     send_to_server(sockfd, message);
     response = receive_from_server(sockfd);
+    response = strchr(response, '{');
 
     // printing response
-    if (strstr(response, "OK")) {
-        printf("SUCCESS - Displayed information about book with ID %s\n", book_id);
-    }  else {
-        printf("ERROR - Book ID does not exist!\n");
+    if (response != NULL) {
+        if (strstr(response, "No book was found!")) {
+            printf("ERROR - ID does not match any book in the database!\n");
+        } else {
+            printf("%s\n", response);
+        }
     }
 
     // closing connection
     close_connection(sockfd);
-    free(cookies);
+    // free(cookies);
     return 0;
 }
 
@@ -334,8 +331,6 @@ int add_book() {
         printf("\nERROR - Page count must be a number!");
         return -1;
     }
-    //printf("\nSUCCESS - Book added into database!\n");
-    //fflush(stdin);
 
     // constructing the JSON packet
     JSON_Value* root_value = json_value_init_object();
@@ -357,12 +352,11 @@ int add_book() {
     // creating message
     char** cookies = (char**)malloc(sizeof(char*));
     cookies[0] = session_cookie;
-    message = compute_post_request(serv_addr, url, content_type, &json, 5, &session_cookie, 1);
+    message = compute_post_request(serv_addr, url, content_type, &json, 1, NULL, 0, jwt_token);
 
     // sending message to server and receiving response
     send_to_server(sockfd, message);
     response = receive_from_server(sockfd);
-    printf("Response from Server: %s\n", response);
 
     // printing response
     if (strstr(response, "OK")) {
@@ -376,13 +370,6 @@ int add_book() {
     json_free_serialized_string(json);
     json_value_free(root_value);
     free(cookies);
-    // free(title);
-    // free(author);
-    // free(genre);
-    // free(publisher);
-    // free(page_count);
-    // free(message);
-    // free(response);
     return 0;
 }
 
@@ -416,11 +403,12 @@ int delete_book() {
     sockfd = open_connection(serv_addr, port, AF_INET, SOCK_STREAM, 0);
 
     // DELETE request data
-    char base_url[] = "/api/v1/tema/library/books/:";
-    int url_len = strlen(base_url) + strlen(book_id);
+    char base_url[] = "/api/v1/tema/library/books/";
+    int url_len = strlen(base_url) + strlen(book_id) + 1;
     char url[url_len];
     memset(url, 0, url_len);
     sprintf(url, "%s%s", base_url, book_id);
+    url[url_len - 1] = '\0';
 
     // creating message
     message = compute_delete_request(serv_addr, url, jwt_token);
@@ -457,8 +445,7 @@ int logout() {
     char url[] = "/api/v1/tema/auth/logout";
 
     // creating message
-    char** cookies = NULL;
-    message = compute_get_request(serv_addr, url, NULL, cookies, 0, jwt_token);
+    message = compute_get_request(serv_addr, url, NULL, &session_cookie, 1, NULL);
 
     // sending message to server and receiving response
     send_to_server(sockfd, message);
@@ -475,6 +462,8 @@ int logout() {
     close_connection(sockfd);
 
     // setting session cookie and jwt token to null
+    free(session_cookie);
+    free(jwt_token);
     session_cookie = NULL;
     jwt_token = NULL;
     return 0;

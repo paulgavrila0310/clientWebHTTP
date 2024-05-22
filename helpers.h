@@ -34,6 +34,4 @@ char* get_jwt_token(char* response);
 // checks if input is number
 int is_number(char* buff);
 
-// checks if input contains only valid characters
-int is_valid_input(char* buff, char* forbidden);
 #endif

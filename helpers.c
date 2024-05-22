@@ -170,10 +170,3 @@ int is_number(char* buff) {
             return 0;
     return 1;
 }
-
-int is_valid_input(char* buff, char* forbidden) {
-    for (int i = 0; i < strlen(buff); i++)
-        if (strchr(forbidden, buff[i]))
-            return 0;
-    return 1;
-}
