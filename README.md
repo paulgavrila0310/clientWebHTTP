@@ -1,19 +1,16 @@
-# PROTOCOALE DE COMUNICAȚII - TEMA 4 - CLIENT WEB. COMUNICAȚIE CU REST API.
+# COMMUNICATION PROTOCOLS - ASSIGNMENT 4 - HTTP WEB CLIENT. COMMUNICATION USING REST API.
 
 **STUDENT** - Gavrilă Paul-Alexandru
 
-**GRUPA** - 325CC
-
-Tema constă în implementarea unui client web care comunică cu un server prin intermediul
-protocolului HTTP utilizând REST API. Implementarea mea pornește de la rezolvarea
-laboratorului 9, funcțiile din cadrul acestuia fiind utilizate drept schelet.
+The assignment contains the implementation of a HTTP web client that communicates with a server (in this case, an online book library), using the C programming language and the REST API for accessing and modifying data
+using HTTP requests.
 
 
-Programul citește de la tastatură comenzi care vor fi trimise către server sub formă de request-uri, care pot fi de 3 tipuri:
-- *POST REQUEST* - pentru adăugarea/trimiterea de informații către server
-- *GET REQUEST* - pentru a cere și a afișa informații de pe server
-- *DELETE REQUEST* - pentru a șterge informații de pe server
+The program reads commands from console that are sent to the server as HTTP requests, which can be categorized into 3 types:
+- *POST REQUEST* - adding/sending data to the server
+- *GET REQUEST* - asking to receive data from the server
+- *DELETE REQUEST* - removing data from the server
 
-Funcțiile care construiesc cele 3 tipuri de request-uri se regăsesc în fișierul requests.c. Un request va conține tipul acestuia, adresa IP a server-ului, URL-ul rutei de acces, tipul de conținut al mesajului (la POST request), dar și cookie-ul de sesiune și token-ul de acces când acestea sunt necesare pentru execuția comenzii. Cookie-ul de sesiune atestă faptul că utilizatorul este înregistrat în con, iar token-ul de acces îi conferă utilizatorului acces la bibliotecă.
+The functions that are used for constructing the requests can be found in the requests.c file. A request header will contain its type identifier, the IP address of the server, the URL of the access route, the type of content of the message (only for POST requests), but also the Session Cookie and the Access Token when these are necessary for the execution of the command. The Session Cookie proves to the server that the user is logged into its account, while the Access Token grants the user permission to access the library.
 
 
